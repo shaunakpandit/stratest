@@ -1,0 +1,20 @@
+name: example_sma_cross
+description: Buy when the 15m SMA(20) crosses above the 4h SMA(50), sell when it crosses back below.
+tickers: [AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AMD, NFLX, JPM]
+timeframes: [15m, 4h]
+base: 15m
+warmup_days: 45
+model: anthropic/claude-sonnet-4.5
+prompt_hash: ""
+code: |
+    func Signals(d *Data) []float64 {
+        fast := d.Ind("15m", func(f Frame) []float64 { return SMA(f.Close, 20) })
+        slow := d.Ind("4h", func(f Frame) []float64 { return SMA(f.Close, 50) })
+        out := make([]float64, d.Len())
+        for i := range out {
+            if fast[i] > slow[i] { // NaN comparisons are false -> flat
+                out[i] = 1
+            }
+        }
+        return out
+    }
