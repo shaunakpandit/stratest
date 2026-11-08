@@ -3,7 +3,27 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 )
+
+// Runs before cmd's flag defaults are computed, so .env values like STRATEST_PROVIDER apply to them.
+func init() { LoadEnv(".env") }
+
+// LoadEnv reads KEY=value lines from path into the environment without overriding variables
+// already set, so the binary works outside `nix develop` too.
+func LoadEnv(path string) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	for _, line := range strings.Split(string(raw), "\n") {
+		key, value, ok := strings.Cut(strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "export ")), "=")
+		if key = strings.TrimSpace(key); !ok || key == "" || strings.HasPrefix(key, "#") || os.Getenv(key) != "" {
+			continue
+		}
+		os.Setenv(key, strings.Trim(strings.TrimSpace(value), `"'`))
+	}
+}
 
 // Paths are relative to the working directory so a checkout is self-contained.
 var (
