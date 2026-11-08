@@ -15,7 +15,7 @@
           version = "0.1.0";
           src = ./.;
           # Replace with the hash printed by the first `nix build`.
-          vendorHash = pkgs.lib.fakeHash;
+          vendorHash =  "sha256-Sj7ZwyRCO19R2XU10DlDTV0Jv7jmHCU/tTUOc+JFito=";
           doCheck = false; # tests need a writable cwd; run `go test ./...` in the dev shell
         };
 
