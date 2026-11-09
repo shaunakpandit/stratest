@@ -45,12 +45,10 @@ Trades for JPM (2 of 2)
 
 ## Setup
 
-1. Install Nix with flakes enabled.
-2. `nix develop` gives you a shell with Go, gopls, golangci-lint and gotools. It loads `.env` if present.
+1. Install [devenv](https://devenv.sh) and add `eval "$(devenv hook zsh)"` (or `bash`) to your shell config.
+2. Run `devenv allow` in the checkout once. After that, `cd` into it activates Go, gopls, golangci-lint and gotools.
 3. `cp .env.example .env`, then add an OpenRouter key from <https://openrouter.ai/keys>. Set `POLYGON_API_KEY` only if you want Polygon data. The binary reads `.env` from the directory you run it in, and variables already set in your shell take priority.
-4. `go build -o stratest . && ./stratest --help`
-
-`nix build` also works once you put the real `vendorHash` (printed by the first attempt) into `flake.nix`.
+4. `go build . && ./stratest --help`
 
 ## Quickstart
 

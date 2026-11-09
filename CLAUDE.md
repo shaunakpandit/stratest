@@ -49,6 +49,7 @@ Small functions. Only one interface (`Provider`). No frameworks. Errors are retu
 
 ## How to
 
+- Dev shell: devenv (`devenv.nix`). It activates automatically when you `cd` into the checkout. Build with `go build .`, which writes `./stratest`.
 - Test: `go test ./...` (no network). `go test -race ./...` before touching sandbox concurrency.
 - Regenerate Yaegi symbols after changing exported `ta` functions or `Data`/`Frame`: `go generate ./internal/strategy`. This runs `yaegi extract` for `ta` and `data` (filtered to `Frame` and `Data`), then strips the Go version build tag and gofmts the output. `yaegi extract` treats the dot-less module path `stratest/...` as stdlib and would otherwise pin the files to the current Go version.
 - Add a provider: one file implementing `Provider` plus one line in `data.Providers`.

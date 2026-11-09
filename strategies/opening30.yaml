@@ -1,0 +1,62 @@
+name: opening30
+description: 'record opening 15 min high and low, in the immediate after 30 min block, if a bar closes above opening 15 min high, go long and sell at end of 30 min period. if bar closes below closing 15 min low, go short and sell at end of 30 min period '
+tickers:
+    - TSLA
+    - SPCX
+timeframes:
+    - 5m
+base: 5m
+warmup_days: 5
+model: anthropic/claude-sonnet-5.5
+prompt_hash: ce77cc2cdb7997fc1986c0fc1147e1efb371f234ee4e40017862ef33b4df5f37
+code: |
+    func Signals(d *Data) []float64 {
+        f := d.TF("5m")
+        n := d.Len()
+        out := make([]float64, n)
+        lastDay := -1
+        k := 0
+        hi := math.NaN()
+        lo := math.NaN()
+        pos := 0.0
+        traded := false
+        for i := 0; i < n; i++ {
+            t := f.Time[i]
+            day := t.Year()*1000 + t.YearDay()
+            if day != lastDay {
+                lastDay = day
+                k = 0
+                hi = math.NaN()
+                lo = math.NaN()
+                pos = 0
+                traded = false
+            } else {
+                k++
+            }
+            if k <= 2 {
+                // opening 15 minute range (three 5m bars)
+                if math.IsNaN(hi) || f.High[i] > hi {
+                    hi = f.High[i]
+                }
+                if math.IsNaN(lo) || f.Low[i] < lo {
+                    lo = f.Low[i]
+                }
+                pos = 0
+            } else if k <= 7 {
+                // 09:45-10:15 block: entries allowed, hold until block ends
+                if !traded && pos == 0 {
+                    if f.Close[i] > hi {
+                        pos = 1
+                        traded = true
+                    } else if f.Close[i] < lo {
+                        pos = -1
+                        traded = true
+                    }
+                }
+            } else {
+                pos = 0
+            }
+            out[i] = pos
+        }
+        return out
+    }

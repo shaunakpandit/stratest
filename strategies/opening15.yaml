@@ -1,0 +1,50 @@
+name: opening15
+description: ' if in first 15 min from open, if price passes previous day high, go long and exit trade 30 min later, if it goes below previous day low, sell and exit trade 30 min later '
+tickers:
+    - TSLA
+    - SPCX
+timeframes:
+    - 1m
+    - 1d
+base: 1m
+warmup_days: 5
+model: anthropic/claude-sonnet-5.5
+prompt_hash: 5fd6da77b307e566871c97f463ccf92dde917691686191560cc815b71bf25cae
+code: |
+    func Signals(d *Data) []float64 {
+        n := d.Len()
+        out := make([]float64, n)
+        t := d.TF("1m").Time
+        df := d.TF("1d")
+        c := d.TF("1m").Close
+        pos := 0.0
+        var entry time.Time
+        lastTradeDay := -1
+        for i := 0; i < n; i++ {
+            ti := t[i]
+            dayKey := ti.Year()*1000 + ti.YearDay()
+            if pos != 0 {
+                if ti.Sub(entry) >= 30*time.Minute || dayKey != lastTradeDay {
+                    pos = 0
+                }
+            }
+            if pos == 0 && dayKey != lastTradeDay {
+                mod := ti.Hour()*60 + ti.Minute()
+                if mod >= 570 && mod < 585 {
+                    ph := df.High[i]
+                    pl := df.Low[i]
+                    if c[i] > ph {
+                        pos = 1
+                        entry = ti
+                        lastTradeDay = dayKey
+                    } else if c[i] < pl {
+                        pos = -1
+                        entry = ti
+                        lastTradeDay = dayKey
+                    }
+                }
+            }
+            out[i] = pos
+        }
+        return out
+    }
