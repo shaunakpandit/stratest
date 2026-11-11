@@ -5,12 +5,11 @@ import (
 	"sort"
 	"time"
 
-	"stratest/internal/data"
 	"stratest/internal/strategy"
 )
 
 // EngineVersion is part of the result cache key; bump it when results would change.
-const EngineVersion = "2"
+const EngineVersion = "3"
 
 type Config struct {
 	FeeBps, SlipBps, Capital float64
@@ -61,11 +60,11 @@ func Run(d *strategy.Data, signal []float64, cfg Config) Result {
 	}
 	fills := make([]time.Time, len(times)) // a bar's close is when its fill happens
 	for i, t := range times {
-		fills[i] = data.End(d.Base, t)
+		fills[i] = d.Session().End(d.Base, t)
 	}
 	trades := tradeLog(positions, fills, closes, cost)
 	return Result{Times: times, Equity: equity, Trades: trades,
-		Metrics: compute(equity, returns[1:], positions, trades, closes, BarsPerYear(d.Base))}
+		Metrics: compute(equity, returns[1:], positions, trades, closes, BarsPerYear(d.Base, d.Session()))}
 }
 
 // tradeLog splits positions into contiguous non-zero runs. A trade entered for bar i was filled

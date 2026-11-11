@@ -15,7 +15,7 @@ func (m *mockProvider) Fetch(_ string, from, to time.Time, _ string) ([]Bar, err
 	for t := from; t.Before(to); t = t.Add(day) {
 		bars = append(bars, Bar{Time: t, Close: 1})
 	}
-	return Normalize(bars, "1d"), nil
+	return RegularHours.Normalize(bars, "1d"), nil
 }
 
 func TestCacheFetchesOnlyMissing(t *testing.T) {

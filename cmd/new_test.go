@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"stratest/internal/config"
+	"stratest/internal/data"
 	"stratest/internal/llm"
 	"stratest/internal/strategy"
 )
@@ -95,6 +96,9 @@ func TestNewRejectsBadInput(t *testing.T) {
 func TestParseTickersAndWindow(t *testing.T) {
 	if got := parseTickers("spy, Qqq", "qqq,iwm"); !slices.Equal(got, []string{"SPY", "QQQ", "IWM"}) {
 		t.Errorf("parseTickers = %v", got)
+	}
+	if got := parseTickers("/mnq, MNQ=F,aapl", "futures"); got[0] != "MNQ=F" || got[1] != "AAPL" || len(got) != 2+len(data.LiquidFutures)-1 {
+		t.Errorf("parseTickers with futures = %v", got)
 	}
 	start, end, err := window("6mo", "", "2025-06-01")
 	if err != nil || start.Format("2006-01-02") != "2024-12-01" || end.Format("2006-01-02") != "2025-06-01" {

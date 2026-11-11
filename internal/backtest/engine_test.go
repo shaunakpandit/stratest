@@ -18,7 +18,7 @@ func daily(closes ...float64) *data.Data {
 		bars = append(bars, data.Bar{Time: day.UTC(), Open: c, High: c, Low: c, Close: c})
 		day = day.AddDate(0, 0, 1)
 	}
-	return data.NewData("1d", bars, []string{"1d"})
+	return data.NewData(data.RegularHours, "1d", bars, []string{"1d"})
 }
 
 func constant(n int, v float64) []float64 {

@@ -60,7 +60,7 @@ The wizard asks for:
 
 1. **Name**: a slug such as `sma_15m_x_4h`.
 2. **Description**: plain English. See below.
-3. **Tickers**: pick from tickers you've already downloaded, and/or type new ones (`AAPL, MSFT, NVDA`). Nothing is downloaded yet.
+3. **Tickers**: pick from tickers you've already downloaded, and/or type new ones (`AAPL, MSFT, NVDA`, or futures like `/MNQ`). Nothing is downloaded yet.
 4. **Review**: Generate, Edit, or Cancel.
 5. **Generate**: the LLM writes the code, which is then compiled and checked on synthetic data, including a lookahead probe. If validation fails, the error goes back to the LLM for one retry.
 6. **Result**: shows the detected timeframes, the base interval, warm-up days, and the code. Choose Save, Regenerate, Edit description, or Discard.
@@ -101,18 +101,31 @@ Rules like "buy when X, sell when Y" become stateful: the position is held until
 | `yahoo` (default) | none | 1m ≈ 7 days · 5m/15m/30m ≈ 60 days · 1h/4h ≈ 730 days · 1d unlimited |
 | `polygon` | `POLYGON_API_KEY` | depends on your plan |
 
-Only the strategy's **base** timeframe (its finest) is downloaded. Every coarser timeframe is resampled locally into buckets anchored at the 09:30 New York open. So a cross-timeframe strategy needs:
+Only the strategy's **base** timeframe (its finest) is downloaded. Every coarser timeframe is resampled locally into buckets anchored at the session open (09:30 ET for stocks, 18:00 ET for futures). So a cross-timeframe strategy needs:
 
 - every intraday timeframe to be a whole multiple of the base (`15m` + `4h` works, `1h` + `45m` doesn't; `1d` and `1w` always work), and
 - the provider to have base-interval data for the whole window. With Yahoo, a 15m strategy can only test about 60 days back, so `--period 1y` fails right away with a hint. Use `--period 45d`, Polygon, or a coarser base. If the warm-up would reach past the provider's limit, it is clipped and a note is printed.
 
-Prices are regular-session only (09:30–16:00 ET), adjusted where the source allows. SPY is always fetched as the benchmark.
+Stock prices are regular-session only (09:30–16:00 ET), adjusted where the source allows. SPY is always fetched as the benchmark.
+
+## Futures
+
+Write `/MNQ` or `MNQ=F`. Both providers return one continuous series per product:
+
+- `yahoo`: Yahoo's front-month series, which rolls at expiry.
+- `polygon`: stitched from individual contracts. Each session uses the contract with the most daily volume, so it rolls when traders do, about a week before expiry for equity index futures, and never rolls back. A free key allows 5 calls a minute. The fetcher waits out rate limits and prints a note, so a long window on a monthly contract like CL can take a few minutes the first time.
+
+`--tickers futures` `--tickers futures` runs the most liquid CME contracts: ES, MES, NQ, MNQ, RTY, M2K, YM, MYM, ZN, ZF, ZT, ZB, CL, NG, GC, MGC, 6E.
+
+- Futures use the full Globex session, 18:00–17:00 ET. A daily bar runs from 18:00 the evening before to 17:00, and intraday buckets are anchored at 18:00 (4h: 18:00, 22:00, 02:00, …, 14:00–17:00).
+- Returns are percentages of price, like stocks, so `--fee-bps`/`--slip-bps` apply. Round-trip costs on a micro contract are roughly 0.2–0.5 bps, much lower than the defaults.
+- Neither series is back-adjusted, so each roll shows up as one jump in price.
 
 ## Caching
 
 Everything lives under `.cache/` (gitignored):
 
-- `prices/<provider>/<interval>/<ticker>.gob`: bars plus the time ranges already requested. Only missing ranges are fetched, and today's open session is refetched until it closes.
+- `prices/<provider>/<interval>/<ticker>.gob`: bars plus the time ranges already requested. Only missing ranges are fetched, and today is never marked covered, so it is refetched.
 - `llm/<prompt_hash>.json`: validated LLM output, keyed by description + prompt template + model.
 - `results/<hash>.gob`: backtest results, keyed by code, ticker, window, timeframes, provider, costs, and engine version.
 

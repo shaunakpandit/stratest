@@ -19,7 +19,7 @@ func session(year int, month time.Month, day int, offset float64) []Bar {
 
 func TestAlignNoLookahead(t *testing.T) {
 	bars := append(session(2024, 3, 4, 0), session(2024, 3, 5, 100)...)
-	d := NewData("15m", bars, []string{"15m", "4h"})
+	d := NewData(RegularHours, "15m", bars, []string{"15m", "4h"})
 	h4 := d.TF("4h").Close
 	if len(h4) != d.Len() {
 		t.Fatalf("aligned length %d, want %d", len(h4), d.Len())
@@ -44,7 +44,7 @@ func TestAlignNoLookahead(t *testing.T) {
 }
 
 func TestResampleSessionAnchored(t *testing.T) {
-	hourly := Resample(session(2024, 3, 4, 0), "1h")
+	hourly := RegularHours.Resample(session(2024, 3, 4, 0), "1h")
 	if len(hourly) != 7 {
 		t.Fatalf("got %d hourly bars, want 7", len(hourly))
 	}
@@ -58,11 +58,11 @@ func TestResampleSessionAnchored(t *testing.T) {
 	if got := last.Time.In(NY).Format("15:04"); got != "15:30" || last.Volume != 2 {
 		t.Errorf("partial last bucket: start %s volume %v, want 15:30 and 2", got, last.Volume)
 	}
-	if end := End("1h", last.Time).In(NY).Format("15:04"); end != "16:00" {
+	if end := RegularHours.End("1h", last.Time).In(NY).Format("15:04"); end != "16:00" {
 		t.Errorf("partial bucket ends %s, want 16:00", end)
 	}
 
-	four := Resample(session(2024, 3, 4, 0), "4h")
+	four := RegularHours.Resample(session(2024, 3, 4, 0), "4h")
 	if len(four) != 2 || four[0].Volume != 16 || four[1].Volume != 10 || four[1].Time.In(NY).Format("15:04") != "13:30" {
 		t.Errorf("4h buckets wrong: %+v", four)
 	}
@@ -71,7 +71,7 @@ func TestResampleSessionAnchored(t *testing.T) {
 func TestResampleAcrossDST(t *testing.T) {
 	// DST started on Sunday 2024-03-10: the open moves from 14:30 UTC to 13:30 UTC.
 	bars := append(session(2024, 3, 8, 0), session(2024, 3, 11, 100)...)
-	hourly := Resample(bars, "1h")
+	hourly := RegularHours.Resample(bars, "1h")
 	if len(hourly) != 14 {
 		t.Fatalf("got %d hourly bars, want 14 (no bucket spans sessions)", len(hourly))
 	}
@@ -83,10 +83,10 @@ func TestResampleAcrossDST(t *testing.T) {
 			t.Errorf("bucket %v is not anchored at :30 NY", b.Time.In(NY))
 		}
 	}
-	if daily := Resample(bars, "1d"); len(daily) != 2 || daily[1].Open != 100 || daily[1].Close != 125 {
+	if daily := RegularHours.Resample(bars, "1d"); len(daily) != 2 || daily[1].Open != 100 || daily[1].Close != 125 {
 		t.Errorf("daily bars wrong: %+v", daily)
 	}
-	if weekly := Resample(bars, "1w"); len(weekly) != 2 {
+	if weekly := RegularHours.Resample(bars, "1w"); len(weekly) != 2 {
 		t.Errorf("got %d weekly bars, want 2", len(weekly))
 	}
 }
@@ -112,10 +112,10 @@ func TestNormalizeFiltersSession(t *testing.T) {
 		{Time: open.Add(15 * time.Minute), Close: 2}, {Time: open, Close: 1}, {Time: open, Close: 1},
 		{Time: open.Add(-30 * time.Minute), Close: 9}, {Time: open.Add(390 * time.Minute), Close: 9},
 	}
-	if got := Normalize(bars, "15m"); len(got) != 2 || got[0].Close != 1 || got[1].Close != 2 {
+	if got := RegularHours.Normalize(bars, "15m"); len(got) != 2 || got[0].Close != 1 || got[1].Close != 2 {
 		t.Errorf("got %+v", got)
 	}
-	daily := Normalize([]Bar{{Time: time.Date(2024, 3, 4, 0, 0, 0, 0, time.UTC), Close: 1}}, "1d")
+	daily := RegularHours.Normalize([]Bar{{Time: time.Date(2024, 3, 4, 0, 0, 0, 0, time.UTC), Close: 1}}, "1d")
 	if !daily[0].Time.Equal(open) {
 		t.Errorf("daily bar stamped %v, want the 09:30 open", daily[0].Time)
 	}

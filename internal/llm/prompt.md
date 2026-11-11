@@ -23,7 +23,7 @@ func (d *Data) Align(name string, x []float64) []float64         // map a series
 func (d *Data) Ind(name string, fn func(Frame) []float64) []float64 // fn on Native(name), then Align: use this for indicators
 ```
 
-Timeframe names: "1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w". Intraday bars are anchored to the 09:30 New York open.
+Timeframe names: "1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w". Intraday bars are anchored to the session open: 09:30–16:00 New York for stocks, 18:00–17:00 New York (CME Globex, opening the prior evening) for futures. A "1d" bar is one session, so a futures day starts the evening before its date. Write session logic in terms of bar times and `1d` bars rather than hard-coded clock times when the strategy should work on both.
 
 - Every Frame returned by `TF` has exactly `d.Len()` entries, so all timeframes are indexed with the same `i`. For a higher timeframe, entry `i` is the most recent *completed* bar of that timeframe as of base bar `i` (NaN before the first one completes).
 - An indicator computed on an aligned higher-timeframe series would step over repeated values, which is wrong. **Always compute indicators with `d.Ind`**, which runs them on the native bars and aligns the result:

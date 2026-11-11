@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"stratest/internal/data"
 )
 
 var root = &cobra.Command{
@@ -23,13 +25,20 @@ func Execute() {
 	}
 }
 
-// parseTickers uppercases, trims and dedupes a comma-separated list, keeping order.
+// parseTickers uppercases, trims and dedupes a comma-separated list, keeping order. /NQ becomes
+// Yahoo's continuous contract NQ=F, and "futures" expands to the most liquid contracts.
 func parseTickers(lists ...string) []string {
 	var out []string
 	for _, list := range lists {
 		for _, ticker := range strings.Split(list, ",") {
-			if ticker = strings.ToUpper(strings.TrimSpace(ticker)); ticker != "" && !slices.Contains(out, ticker) {
-				out = append(out, ticker)
+			expanded := []string{data.Symbol(strings.ToUpper(strings.TrimSpace(ticker)))}
+			if expanded[0] == "FUTURES" {
+				expanded = data.LiquidFutures
+			}
+			for _, ticker := range expanded {
+				if ticker != "" && !slices.Contains(out, ticker) {
+					out = append(out, ticker)
+				}
 			}
 		}
 	}

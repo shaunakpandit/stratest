@@ -16,14 +16,14 @@ type Metrics struct {
 	AvgBars, Exposure, FinalEquity                float64
 }
 
-func BarsPerYear(base string) float64 {
+func BarsPerYear(base string, session data.Session) float64 {
 	switch base {
 	case "1d":
 		return 252
 	case "1w":
 		return 52
 	}
-	return 252 * 390 / float64(data.Minutes(base))
+	return 252 * float64(session.Length) / float64(data.Minutes(base))
 }
 
 func compute(equity, returns, positions []float64, trades []Trade, closes []float64, barsPerYear float64) Metrics {

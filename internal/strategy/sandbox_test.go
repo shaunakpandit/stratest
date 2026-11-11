@@ -102,7 +102,7 @@ func TestInterpreterPerGoroutine(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			d := data.NewData("15m", Synthetic("15m", 500), crossTimeframes)
+			d := data.NewData(data.RegularHours, "15m", Synthetic("15m", 500), crossTimeframes)
 			if out, err := Call(fn, d, 5e9); err != nil || len(out) != 500 {
 				t.Error(len(out), err)
 			}

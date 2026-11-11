@@ -206,7 +206,7 @@ func backtestAll(s *strategy.Strategy, tickers []string, bars map[string][]data.
 						continue
 					}
 				}
-				d := data.NewData(s.Base, bars[ticker], s.Timeframes)
+				d := data.NewData(data.SessionOf(ticker), s.Base, bars[ticker], s.Timeframes)
 				signal, err := strategy.Call(signals, d, time.Minute)
 				if err == nil && len(signal) != d.Len() {
 					err = fmt.Errorf("Signals returned %d values for %d bars", len(signal), d.Len())

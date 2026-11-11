@@ -28,7 +28,7 @@ var yahooInterval = map[string]string{"1m": "1m", "5m": "5m", "15m": "15m", "30m
 func (y Yahoo) Fetch(ticker string, from, to time.Time, interval string) ([]Bar, error) {
 	if interval == "4h" {
 		bars, err := y.Fetch(ticker, from, to, "1h")
-		return Resample(bars, "4h"), err
+		return SessionOf(ticker).Resample(bars, "4h"), err
 	}
 	var response struct {
 		Chart struct {
@@ -61,5 +61,5 @@ func (y Yahoo) Fetch(ticker string, from, to time.Time, interval string) ([]Bar,
 		bars[i] = Bar{Time: time.Unix(timestamp, 0).UTC(), Open: quote.Open[i] * factor, High: quote.High[i] * factor,
 			Low: quote.Low[i] * factor, Close: quote.Close[i] * factor, Volume: quote.Volume[i]}
 	}
-	return Normalize(bars, interval), nil
+	return SessionOf(ticker).Normalize(bars, interval), nil
 }

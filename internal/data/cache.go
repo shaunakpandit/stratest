@@ -86,13 +86,11 @@ func earlier(a, b time.Time) time.Time {
 	return b
 }
 
-// coveredUntil stops coverage at the start of today while today's session is still open.
+// coveredUntil stops coverage at the start of today: futures trade nearly around the clock, so
+// anything later may hold a still-forming bar.
 func coveredUntil(now time.Time) time.Time {
 	n := now.In(NY)
-	if n.Weekday() != time.Saturday && n.Weekday() != time.Sunday && n.Hour() < 16 {
-		return time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, NY)
-	}
-	return now
+	return time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, NY)
 }
 
 var Now = time.Now
@@ -113,7 +111,7 @@ func Load(dir string, p Provider, ticker, interval string, from, to time.Time, r
 			return nil, true, err
 		}
 		cache.Bars = slices.DeleteFunc(cache.Bars, func(b Bar) bool { return !b.Time.Before(gap.From) && b.Time.Before(gap.To) })
-		cache.Bars = Normalize(append(cache.Bars, fresh...), interval)
+		cache.Bars = SessionOf(ticker).Normalize(append(cache.Bars, fresh...), interval)
 	}
 	if len(gaps) > 0 {
 		if until := earlier(to, coveredUntil(Now())); until.After(from) {

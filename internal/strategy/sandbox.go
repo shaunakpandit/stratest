@@ -151,7 +151,7 @@ func Validate(code string, timeframes []string, base string) error {
 		return err
 	}
 	bars := Synthetic(base, 2000)
-	full, err := Call(fn, data.NewData(base, bars, timeframes), 2*time.Second)
+	full, err := Call(fn, data.NewData(data.RegularHours, base, bars, timeframes), 2*time.Second)
 	if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func Validate(code string, timeframes []string, base string) error {
 	rng := rand.New(rand.NewPCG(3, 4))
 	for range 3 {
 		k := len(bars)/4 + rng.IntN(len(bars)*3/4-1)
-		truncated, err := Call(fn, data.NewData(base, bars[:k+1], timeframes), 2*time.Second)
+		truncated, err := Call(fn, data.NewData(data.RegularHours, base, bars[:k+1], timeframes), 2*time.Second)
 		if err != nil {
 			return fmt.Errorf("on data truncated at bar %d: %w", k, err)
 		}

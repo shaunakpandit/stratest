@@ -6,6 +6,7 @@ import (
 	"io"
 	"maps"
 	"net/http"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -34,20 +35,30 @@ func NewProvider(name string) (Provider, error) {
 
 const day = 24 * time.Hour
 
+// Rate limits (Polygon's free plan allows 5 calls a minute) are waited out rather than failed.
+const rateLimitWait, rateLimitTries = 15 * time.Second, 12
+
 func getJSON(url string, header http.Header, out any) error {
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
+	for try := 1; ; try++ {
+		request, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return err
+		}
+		request.Header = header
+		response, err := http.DefaultClient.Do(request)
+		if err != nil {
+			return err
+		}
+		body, _ := io.ReadAll(response.Body)
+		response.Body.Close()
+		if response.StatusCode == http.StatusTooManyRequests && try < rateLimitTries {
+			fmt.Fprintf(os.Stderr, "note: rate limited by %s, retrying in %s\n", request.URL.Host, rateLimitWait)
+			time.Sleep(rateLimitWait)
+			continue
+		}
+		if response.StatusCode != http.StatusOK {
+			return fmt.Errorf("GET %s: %s: %.300s", strings.Split(url, "?")[0], response.Status, body)
+		}
+		return json.Unmarshal(body, out)
 	}
-	request.Header = header
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	body, _ := io.ReadAll(response.Body)
-	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("GET %s: %s: %.300s", strings.Split(url, "?")[0], response.Status, body)
-	}
-	return json.Unmarshal(body, out)
 }
